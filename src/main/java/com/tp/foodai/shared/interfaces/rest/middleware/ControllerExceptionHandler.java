@@ -1,6 +1,9 @@
 package  com.tp.foodai.shared.interfaces.rest.middleware;
 
 
+import com.tp.foodai.food_detection.exceptions.AiDetectionException;
+import com.tp.foodai.food_detection.exceptions.ImageUploadException;
+import com.tp.foodai.food_detection.exceptions.InvalidImageFormatException;
 import com.tp.foodai.shared.domain.exceptions.ResourceNotFoundException;
 import com.tp.foodai.shared.domain.exceptions.UnauthorizedException;
 import com.tp.foodai.shared.domain.exceptions.ValidationException;
@@ -48,6 +51,36 @@ public class ControllerExceptionHandler {
     public ErrorMessage unauthorizedException(Exception ex, WebRequest request){
         return new ErrorMessage(
                 HttpStatus.UNAUTHORIZED.value(),
+                ex.getMessage(),
+                request.getDescription(false)
+        );
+    }
+
+    @ExceptionHandler(InvalidImageFormatException.class)
+    @ResponseStatus(value = HttpStatus.BAD_REQUEST)
+    public ErrorMessage invalidImageFormatException(InvalidImageFormatException ex, WebRequest request){
+        return new ErrorMessage(
+                HttpStatus.BAD_REQUEST.value(),
+                ex.getMessage(),
+                request.getDescription(false)
+        );
+    }
+
+    @ExceptionHandler(ImageUploadException.class)
+    @ResponseStatus(value = HttpStatus.INTERNAL_SERVER_ERROR)
+    public ErrorMessage imageUploadException(ImageUploadException ex, WebRequest request){
+        return new ErrorMessage(
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                ex.getMessage(),
+                request.getDescription(false)
+        );
+    }
+
+    @ExceptionHandler(AiDetectionException.class)
+    @ResponseStatus(value = HttpStatus.SERVICE_UNAVAILABLE)
+    public ErrorMessage aiDetectionException(AiDetectionException ex, WebRequest request){
+        return new ErrorMessage(
+                HttpStatus.SERVICE_UNAVAILABLE.value(),
                 ex.getMessage(),
                 request.getDescription(false)
         );

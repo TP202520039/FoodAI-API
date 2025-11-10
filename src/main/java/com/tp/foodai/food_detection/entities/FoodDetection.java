@@ -18,7 +18,7 @@ import lombok.*;
 @Table(name = "food_detections")
 public class FoodDetection extends AuditableAbstractAggregateRoot<FoodDetection> {
     
-    @Column(name = "firebase_uid", unique = true, nullable = false, length = 128)
+    @Column(name = "firebase_uid", nullable = false, length = 128)
     private String firebaseUid;
 
     @Column(name = "food_name", nullable = false, length = 255)

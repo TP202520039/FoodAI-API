@@ -23,7 +23,7 @@ public class FoodComponent extends AuditableAbstractAggregateRoot<FoodComponent>
 
     
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "nutrional_data_id", nullable = false)
+    @JoinColumn(name = "nutritional_data_id", nullable = true)
     private NutritionalData nutritionalData;
 
     @Column(name = "quantity", nullable = false)
@@ -34,18 +34,22 @@ public class FoodComponent extends AuditableAbstractAggregateRoot<FoodComponent>
 
     // --- Cálculos de valores nutricionales con regla de tres ---
     public double getCaloriesForQuantity() {
+        if (nutritionalData == null) return 0.0;
         return ruleOfThree(nutritionalData.getCalories(), quantity);
     }
 
     public double getProteinForQuantity() {
+        if (nutritionalData == null) return 0.0;
         return ruleOfThree(nutritionalData.getProtein(), quantity);
     }
 
     public double getFatForQuantity() {
+        if (nutritionalData == null) return 0.0;
         return ruleOfThree(nutritionalData.getFat(), quantity);
     }
 
     public double getCarbsForQuantity() {
+        if (nutritionalData == null) return 0.0;
         return ruleOfThree(nutritionalData.getCarbohydrates(), quantity);
     }
 
