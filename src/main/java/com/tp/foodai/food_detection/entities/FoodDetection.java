@@ -1,6 +1,8 @@
 package com.tp.foodai.food_detection.entities;
 
 import com.tp.foodai.shared.domain.model.aggregates.AuditableAbstractAggregateRoot;
+
+import java.sql.Date;
 import java.util.List;
 
 import com.tp.foodai.food_detection.value_objects.FoodCategory;
@@ -28,6 +30,9 @@ public class FoodDetection extends AuditableAbstractAggregateRoot<FoodDetection>
     @Enumerated(EnumType.STRING)
     @Column(name = "category", nullable = false)
     private FoodCategory category;
+
+    @Column(name = "detection_date", nullable = false)
+    private Date detectionDate;
 
     @OneToMany(mappedBy = "foodDetection", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<FoodComponent> components;
