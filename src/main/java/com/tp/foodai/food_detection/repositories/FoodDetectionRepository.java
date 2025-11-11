@@ -10,6 +10,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.sql.Date;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -57,4 +58,7 @@ public interface FoodDetectionRepository extends JpaRepository<FoodDetection, Lo
     
     // Obtener última detección de un usuario
     Optional<FoodDetection> findFirstByFirebaseUidOrderByDetectionDateDesc(String firebaseUid);
+
+    // Listar detecciones por frebaseUid y fecha de detección
+    List<FoodDetection> findByFirebaseUidAndDetectionDate(String firebaseUid, Date detectionDate);
 }

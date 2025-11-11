@@ -4,6 +4,7 @@ import com.tp.foodai.food_detection.dtos.external.AiDetectionResponseDto;
 import com.tp.foodai.food_detection.dtos.external.DetectedFoodDto;
 import com.tp.foodai.food_detection.dtos.request.UpdateComponentQuantityDto;
 import com.tp.foodai.food_detection.dtos.response.DetectionHistoryDto;
+import com.tp.foodai.food_detection.dtos.response.FoodDetectionGroupedResponseDto;
 import com.tp.foodai.food_detection.dtos.response.FoodDetectionResponseDto;
 import com.tp.foodai.food_detection.entities.FoodComponent;
 import com.tp.foodai.food_detection.entities.FoodDetection;
@@ -28,6 +29,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.sql.Date;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -129,6 +131,35 @@ public class FoodDetectionServiceImpl implements FoodDetectionService {
             logger.error("Error during food analysis", e);
             throw e;
         }
+    }
+
+    @Override
+    public List<FoodDetectionGroupedResponseDto> getDetectionsByUserAndDate(String firebaseUid, Date detectionDate) {
+        
+        List<FoodDetection> detections = foodDetectionRepository.findByFirebaseUidAndDetectionDate(firebaseUid, detectionDate);
+        
+        // Agrupar por categoría
+        Map<String, List<FoodDetectionResponseDto>> grouped = detections.stream()
+                .map(mapper::toResponseDto)
+                .collect(Collectors.groupingBy(dto -> dto.getCategory().toString()));
+        
+        // Construir la lista de DTOs agrupados
+        List<FoodDetectionGroupedResponseDto> result = new ArrayList<>();
+
+        // 🔹 Recorremos todas las categorías del enum
+        for (FoodCategory category : FoodCategory.values()) {
+            List<FoodDetectionResponseDto> detectionDtos = grouped.getOrDefault(category.toString(), new ArrayList<>());
+
+            FoodDetectionGroupedResponseDto groupedDto = FoodDetectionGroupedResponseDto.builder()
+                    .category(category.name()) // o category.toString() si prefieres
+                    .count((long) detectionDtos.size())
+                    .items(detectionDtos)
+                    .build();
+
+            result.add(groupedDto);
+        }
+        
+        return result;
     }
 
     @Override
@@ -268,4 +299,5 @@ public class FoodDetectionServiceImpl implements FoodDetectionService {
         }
         return str.substring(0, 1).toUpperCase() + str.substring(1).toLowerCase();
     }
+
 }

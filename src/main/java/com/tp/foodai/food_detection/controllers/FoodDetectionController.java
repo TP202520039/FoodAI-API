@@ -2,6 +2,7 @@ package com.tp.foodai.food_detection.controllers;
 
 import com.tp.foodai.food_detection.dtos.request.UpdateComponentQuantityDto;
 import com.tp.foodai.food_detection.dtos.response.DetectionHistoryDto;
+import com.tp.foodai.food_detection.dtos.response.FoodDetectionGroupedResponseDto;
 import com.tp.foodai.food_detection.dtos.response.FoodDetectionResponseDto;
 import com.tp.foodai.food_detection.exceptions.InvalidImageFormatException;
 import com.tp.foodai.food_detection.services.FoodDetectionService;
@@ -30,7 +31,7 @@ import java.util.List;
 
 @Tag(name = "Food Detection", description = "Endpoints para análisis de comida con IA")
 @RestController
-@RequestMapping("/api/food-detection")
+@RequestMapping("/api/food-detections")
 @SecurityRequirement(name = "Bearer Authentication")
 public class FoodDetectionController {
 
@@ -65,6 +66,22 @@ public class FoodDetectionController {
                 image, firebaseUid, category, java.sql.Date.valueOf(detectionDate));
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @Operation(summary = "Listar detecciones por usuario y fecha agrupados por categoría",
+               description = "Obtiene todas las detecciones realizadas por el usuario en una fecha específica")
+    @GetMapping("/group-by-category")
+    public ResponseEntity<List<FoodDetectionGroupedResponseDto>> getDetectionsByUserAndDate(
+            @RequestParam("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            Authentication authentication) {
+
+        User user = (User) authentication.getPrincipal();
+        String firebaseUid = user.getFirebaseUid();
+
+        List<FoodDetectionGroupedResponseDto> detections = foodDetectionService.getDetectionsByUserAndDate(
+                firebaseUid, java.sql.Date.valueOf(date));
+
+        return ResponseEntity.ok(detections);
     }
 
     @Operation(summary = "Obtener historial de detecciones",
