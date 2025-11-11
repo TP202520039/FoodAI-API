@@ -73,7 +73,31 @@ public class FoodDetectionServiceImpl implements FoodDetectionService {
             logger.info("Calling AI Detection API...");
             AiDetectionResponseDto aiResponse = aiDetectionService.detectFood(imageUrl);
 
-            // 3. Crear la entidad FoodDetection
+            // 3. Verificar si se detectaron alimentos
+            if (aiResponse.getDetectedFoods() == null || aiResponse.getDetectedFoods().isEmpty()) {
+                logger.warn("No foods detected in the image for user: {}", firebaseUid);
+                
+                // Crear una detección vacía para mantener registro
+                FoodDetection emptyDetection = FoodDetection.builder()
+                        .firebaseUid(firebaseUid)
+                        .foodName("Sin alimentos detectados")
+                        .imageUrl(imageUrl)
+                        .category(category)
+                        .detectionDate(detectionDate)
+                        .components(new ArrayList<>())
+                        .totalCalories(0.0)
+                        .totalProtein(0.0)
+                        .totalFat(0.0)
+                        .totalCarbs(0.0)
+                        .build();
+                
+                FoodDetection savedDetection = foodDetectionRepository.save(emptyDetection);
+                logger.info("Empty detection saved with ID: {}", savedDetection.getId());
+                
+                return mapper.toResponseDto(savedDetection);
+            }
+
+            // 4. Crear la entidad FoodDetection
             String foodName = generateFoodName(aiResponse.getDetectedFoods());
             
             FoodDetection foodDetection = FoodDetection.builder()
@@ -85,7 +109,7 @@ public class FoodDetectionServiceImpl implements FoodDetectionService {
                     .components(new ArrayList<>())
                     .build();
 
-            // 4. Crear los FoodComponents con 100g por defecto
+            // 5. Crear los FoodComponents con 100g por defecto
             logger.info("Enriching detected foods with nutritional data...");
             List<FoodComponent> components = enrichComponents(
                     aiResponse.getDetectedFoods(), 
@@ -94,7 +118,7 @@ public class FoodDetectionServiceImpl implements FoodDetectionService {
 
             foodDetection.setComponents(components);
 
-            // 5. Los totales se calculan automáticamente con @PrePersist
+            // 6. Los totales se calculan automáticamente con @PrePersist
             FoodDetection savedDetection = foodDetectionRepository.save(foodDetection);
 
             logger.info("Food detection completed successfully. ID: {}", savedDetection.getId());

@@ -57,14 +57,19 @@ public class AiDetectionService {
                     })
                     .block();
 
-            logger.info("AI Detection API response received: {}", response);
-
-            if (response == null || response.getDetectedFoods() == null || response.getDetectedFoods().isEmpty()) {
-                logger.warn("AI API returned no detected foods");
-                throw new AiDetectionException("No foods detected in the image");
+            if (response == null) {
+                logger.error("AI API returned null response");
+                throw new AiDetectionException("AI Detection API returned null response");
             }
 
-            logger.info("AI Detection successful. Detected {} foods", response.getDetectedFoods().size());
+            // Si no hay alimentos detectados, devolver respuesta vacía (no es un error)
+            if (response.getDetectedFoods() == null || response.getDetectedFoods().isEmpty()) {
+                logger.warn("AI API returned no detected foods");
+                response.setDetectedFoods(new java.util.ArrayList<>());
+            } else {
+                logger.info("AI Detection successful. Detected {} foods", response.getDetectedFoods().size());
+            }
+
             return response;
 
         } catch (AiDetectionException e) {
