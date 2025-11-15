@@ -58,13 +58,13 @@ public class FoodDetectionMapper {
                 .protein(component.getProteinForQuantity())
                 .fat(component.getFatForQuantity())
                 .carbs(component.getCarbsForQuantity())
-                .fiber(component.getNutritionalData().getFiber())
-                .iron(component.getNutritionalData().getIron())
-                .calcium(component.getNutritionalData().getCalcium())
-                .vitaminC(component.getNutritionalData().getVitaminC())
-                .zinc(component.getNutritionalData().getZinc())
-                .potassium(component.getNutritionalData().getPotassium())
-                .folicAcid(component.getNutritionalData().getFolicAcid())
+                .fiber(component.getFiberForQuantity())
+                .iron(component.getIronForQuantity())
+                .calcium(component.getCalciumForQuantity())
+                .vitaminC(component.getVitaminCForQuantity())
+                .zinc(component.getZincForQuantity())
+                .potassium(component.getPotassiumForQuantity())
+                .folicAcid(component.getFolicAcidForQuantity())
                 .build();
     }
 

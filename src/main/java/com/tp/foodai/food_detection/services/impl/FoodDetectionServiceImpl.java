@@ -3,6 +3,8 @@ package com.tp.foodai.food_detection.services.impl;
 import com.tp.foodai.food_detection.dtos.external.AiDetectionResponseDto;
 import com.tp.foodai.food_detection.dtos.external.DetectedFoodDto;
 import com.tp.foodai.food_detection.dtos.request.UpdateComponentQuantityDto;
+import com.tp.foodai.food_detection.dtos.request.UpdateFoodDetectionDto;
+import com.tp.foodai.food_detection.dtos.request.UpdateComponentDto;
 import com.tp.foodai.food_detection.dtos.response.DetectionHistoryDto;
 import com.tp.foodai.food_detection.dtos.response.FoodDetectionGroupedResponseDto;
 import com.tp.foodai.food_detection.dtos.response.FoodDetectionResponseDto;
@@ -221,6 +223,48 @@ public class FoodDetectionServiceImpl implements FoodDetectionService {
         FoodDetection updatedDetection = foodDetectionRepository.save(detection);
 
         logger.info("Updated component {} quantity to {} grams", componentId, updateDto.getQuantityGrams());
+
+        return mapper.toResponseDto(updatedDetection);
+    }
+
+    @Override
+    @Transactional
+    public FoodDetectionResponseDto updateDetection(Long id, 
+                                                    String firebaseUid,
+                                                    UpdateFoodDetectionDto updateDto) {
+        // Verificar que la detección pertenece al usuario
+        FoodDetection detection = foodDetectionRepository.findByIdAndFirebaseUid(id, firebaseUid)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Food detection not found with id: " + id));
+
+        logger.info("Updating food detection ID: {} for user: {}", id, firebaseUid);
+
+        // Actualizar campos básicos
+        detection.setFoodName(updateDto.getFoodName());
+        detection.setCategory(updateDto.getCategory());
+        detection.setDetectionDate(java.sql.Date.valueOf(updateDto.getDetectionDate()));
+
+        // Actualizar cantidades de componentes especificados
+        for (UpdateComponentDto componentDto : updateDto.getComponents()) {
+            // Buscar el componente que pertenece a esta detección
+            FoodComponent component = detection.getComponents().stream()
+                    .filter(c -> c.getId().equals(componentDto.getId()))
+                    .findFirst()
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Component with id " + componentDto.getId() + 
+                            " not found in detection " + id));
+
+            // Actualizar solo la cantidad
+            component.setQuantity(componentDto.getQuantityGrams());
+            logger.info("Updated component {} quantity to {} grams", 
+                       componentDto.getId(), componentDto.getQuantityGrams());
+        }
+
+        // Los totales se calculan automáticamente con @PreUpdate
+        detection.recalculateTotals();
+        FoodDetection updatedDetection = foodDetectionRepository.save(detection);
+
+        logger.info("Successfully updated food detection ID: {}", id);
 
         return mapper.toResponseDto(updatedDetection);
     }

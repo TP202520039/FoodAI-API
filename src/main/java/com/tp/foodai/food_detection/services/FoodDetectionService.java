@@ -1,6 +1,7 @@
 package com.tp.foodai.food_detection.services;
 
 import com.tp.foodai.food_detection.dtos.request.UpdateComponentQuantityDto;
+import com.tp.foodai.food_detection.dtos.request.UpdateFoodDetectionDto;
 import com.tp.foodai.food_detection.dtos.response.DetectionHistoryDto;
 import com.tp.foodai.food_detection.dtos.response.FoodDetectionGroupedResponseDto;
 import com.tp.foodai.food_detection.dtos.response.FoodDetectionResponseDto;
@@ -46,6 +47,15 @@ public interface FoodDetectionService {
         Long componentId, 
         String firebaseUid,
         UpdateComponentQuantityDto updateDto
+    );
+    
+    /**
+     * Actualiza una detección completa: foodName, category, detectionDate y components
+     */
+    FoodDetectionResponseDto updateDetection(
+        Long id,
+        String firebaseUid,
+        UpdateFoodDetectionDto updateDto
     );
     
     void deleteDetection(Long id, String firebaseUid);

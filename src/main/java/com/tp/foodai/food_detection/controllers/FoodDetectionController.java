@@ -1,6 +1,7 @@
 package com.tp.foodai.food_detection.controllers;
 
 import com.tp.foodai.food_detection.dtos.request.UpdateComponentQuantityDto;
+import com.tp.foodai.food_detection.dtos.request.UpdateFoodDetectionDto;
 import com.tp.foodai.food_detection.dtos.response.DetectionHistoryDto;
 import com.tp.foodai.food_detection.dtos.response.FoodDetectionGroupedResponseDto;
 import com.tp.foodai.food_detection.dtos.response.FoodDetectionResponseDto;
@@ -135,6 +136,22 @@ public class FoodDetectionController {
         String firebaseUid = user.getFirebaseUid();
         FoodDetectionResponseDto updated = foodDetectionService.updateComponentQuantity(
                 detectionId, componentId, firebaseUid, updateDto);
+
+        return ResponseEntity.ok(updated);
+    }
+
+    @Operation(summary = "Actualizar detección completa",
+               description = "Permite actualizar el nombre, categoría, fecha y componentes de una detección")
+    @PutMapping("/{id}")
+    public ResponseEntity<FoodDetectionResponseDto> updateDetection(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateFoodDetectionDto updateDto,
+            Authentication authentication) {
+
+        User user = (User) authentication.getPrincipal();
+        String firebaseUid = user.getFirebaseUid();
+        FoodDetectionResponseDto updated = foodDetectionService.updateDetection(
+                id, firebaseUid, updateDto);
 
         return ResponseEntity.ok(updated);
     }
