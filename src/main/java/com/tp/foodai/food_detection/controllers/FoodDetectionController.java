@@ -31,7 +31,7 @@ import java.util.List;
 
 @Tag(name = "Food Detection", description = "Endpoints para análisis de comida con IA")
 @RestController
-@RequestMapping("/api/food-detections")
+@RequestMapping("/api/v1/food-detections")
 @SecurityRequirement(name = "Bearer Authentication")
 public class FoodDetectionController {
 
