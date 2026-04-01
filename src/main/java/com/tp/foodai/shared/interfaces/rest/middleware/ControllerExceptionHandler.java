@@ -1,4 +1,4 @@
-package  com.tp.foodai.shared.interfaces.rest.middleware;
+package com.tp.foodai.shared.interfaces.rest.middleware;
 
 
 import com.tp.foodai.food_detection.exceptions.AiDetectionException;
@@ -8,7 +8,9 @@ import com.tp.foodai.shared.domain.exceptions.ResourceNotFoundException;
 import com.tp.foodai.shared.domain.exceptions.UnauthorizedException;
 import com.tp.foodai.shared.domain.exceptions.ValidationException;
 import com.tp.foodai.shared.interfaces.rest.resources.ErrorMessage;
+import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -32,6 +34,22 @@ public class ControllerExceptionHandler {
         return new ErrorMessage(
                 HttpStatus.BAD_REQUEST.value(),
                 ex.getMessage(),
+                request.getDescription(false)
+        );
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    @ResponseStatus(value = HttpStatus.BAD_REQUEST)
+    public ErrorMessage methodArgumentNotValidException(MethodArgumentNotValidException ex, WebRequest request) {
+        String message = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .map(error -> error.getDefaultMessage() != null ? error.getDefaultMessage() : error.getField())
+                .collect(Collectors.joining(", "));
+
+        return new ErrorMessage(
+                HttpStatus.BAD_REQUEST.value(),
+                message,
                 request.getDescription(false)
         );
     }
