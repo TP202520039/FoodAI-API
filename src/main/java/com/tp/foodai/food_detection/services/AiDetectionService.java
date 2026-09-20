@@ -6,6 +6,7 @@ import com.tp.foodai.food_detection.exceptions.AiDetectionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -17,14 +18,24 @@ import java.time.Duration;
 public class AiDetectionService {
 
     private static final Logger logger = LoggerFactory.getLogger(AiDetectionService.class);
-    
+
     private final WebClient webClient;
+
+    // Server-Timing header from the last FastAPI response on this thread, so the caller can
+    // merge it into the aggregate header (see ServerTiming.mergeUpstream). Request-scoped via
+    // ThreadLocal because this @Service is a Spring singleton. Added for the latency benchmark
+    // requested by ICACIT Reviewer 1 — see paper/benchmark_latencia/PROTOCOLO.md.
+    private final ThreadLocal<String> lastServerTiming = new ThreadLocal<>();
 
     public AiDetectionService(WebClient.Builder webClientBuilder,
                               @Value("${ai.detection.api.url}") String aiApiUrl) {
         this.webClient = webClientBuilder
                 .baseUrl(aiApiUrl)
                 .build();
+    }
+
+    public String getLastServerTiming() {
+        return lastServerTiming.get();
     }
 
     /**
@@ -40,10 +51,10 @@ public class AiDetectionService {
                     .imageUrl(imageUrl)
                     .build();
 
-            AiDetectionResponseDto response = webClient.post()
+            ResponseEntity<AiDetectionResponseDto> entity = webClient.post()
                     .bodyValue(request)
                     .retrieve()
-                    .bodyToMono(AiDetectionResponseDto.class)
+                    .toEntity(AiDetectionResponseDto.class)
                     .timeout(Duration.ofSeconds(30)) // Timeout de 30 segundos
                     .onErrorResume(WebClientResponseException.class, ex -> {
                         logger.error("AI API returned error: {} - {}", ex.getStatusCode(), ex.getResponseBodyAsString());
@@ -56,6 +67,9 @@ public class AiDetectionService {
                                 "Failed to call AI Detection API: " + ex.getMessage()));
                     })
                     .block();
+
+            lastServerTiming.set(entity != null ? entity.getHeaders().getFirst("Server-Timing") : null);
+            AiDetectionResponseDto response = entity != null ? entity.getBody() : null;
 
             if (response == null) {
                 logger.error("AI API returned null response");
@@ -78,5 +92,10 @@ public class AiDetectionService {
             logger.error("Unexpected error during AI detection", e);
             throw new AiDetectionException("Unexpected error during food detection", e);
         }
+        // lastServerTiming is always overwritten on the success path above before this method
+        // returns, and the caller reads it (ServerTiming.mergeUpstream) immediately afterwards
+        // on the same thread; on the exception paths above the caller never reaches that read
+        // (the exception propagates instead), so a stale value from a previous request on a
+        // pooled thread is never merged.
     }
 }
