@@ -20,6 +20,7 @@ import com.tp.foodai.food_detection.services.AzureBlobStorageService;
 import com.tp.foodai.food_detection.services.FoodDetectionService;
 import com.tp.foodai.food_detection.value_objects.FoodCategory;
 import com.tp.foodai.shared.domain.exceptions.ResourceNotFoundException;
+import com.tp.foodai.shared.interfaces.rest.middleware.ServerTiming;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -71,11 +72,14 @@ public class FoodDetectionServiceImpl implements FoodDetectionService {
 
             // 1. Subir imagen a Azure Blob Storage
             logger.info("Uploading image to Azure Blob Storage...");
-            String imageUrl = azureBlobStorageService.uploadImage(file, firebaseUid);
+            String imageUrl = ServerTiming.stage("blob",
+                    () -> azureBlobStorageService.uploadImage(file, firebaseUid));
 
             // 2. Llamar a la API de detección de alimentos
             logger.info("Calling AI Detection API...");
-            AiDetectionResponseDto aiResponse = aiDetectionService.detectFood(imageUrl);
+            AiDetectionResponseDto aiResponse = ServerTiming.stage("ai",
+                    () -> aiDetectionService.detectFood(imageUrl));
+            ServerTiming.mergeUpstream(aiDetectionService.getLastServerTiming(), "ai_");
 
             // 3. Verificar si se detectaron alimentos
             if (aiResponse.getDetectedFoods() == null || aiResponse.getDetectedFoods().isEmpty()) {
@@ -95,7 +99,8 @@ public class FoodDetectionServiceImpl implements FoodDetectionService {
                         .totalCarbs(0.0)
                         .build();
                 
-                FoodDetection savedDetection = foodDetectionRepository.save(emptyDetection);
+                FoodDetection savedDetection = ServerTiming.stage("db_persist",
+                        () -> foodDetectionRepository.save(emptyDetection));
                 logger.info("Empty detection saved with ID: {}", savedDetection.getId());
                 
                 return mapper.toResponseDto(savedDetection);
@@ -115,15 +120,16 @@ public class FoodDetectionServiceImpl implements FoodDetectionService {
 
             // 5. Crear los FoodComponents con 100g por defecto
             logger.info("Enriching detected foods with nutritional data...");
-            List<FoodComponent> components = enrichComponents(
-                    aiResponse.getDetectedFoods(), 
+            List<FoodComponent> components = ServerTiming.stage("db_lookup", () -> enrichComponents(
+                    aiResponse.getDetectedFoods(),
                     foodDetection
-            );
+            ));
 
             foodDetection.setComponents(components);
 
             // 6. Los totales se calculan automáticamente con @PrePersist
-            FoodDetection savedDetection = foodDetectionRepository.save(foodDetection);
+            FoodDetection savedDetection = ServerTiming.stage("db_persist",
+                    () -> foodDetectionRepository.save(foodDetection));
 
             logger.info("Food detection completed successfully. ID: {}", savedDetection.getId());
 
